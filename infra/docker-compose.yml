@@ -1,0 +1,123 @@
+version: "3.9"
+
+networks:
+  schema_evolution_net:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: schema_evolution
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d schema_evolution"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - schema_evolution_net
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - schema_evolution_net
+
+  users-v1:
+    build:
+      context: ../services/users
+    ports:
+      - "8001:8000"
+    environment:
+      SERVICE_VERSION: v1
+      FEATURE_FLAG_GIVEN_NAME: "false"
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/schema_evolution
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - schema_evolution_net
+
+  users-v2:
+    build:
+      context: ../services/users
+    ports:
+      - "8002:8000"
+    environment:
+      SERVICE_VERSION: v2
+      FEATURE_FLAG_GIVEN_NAME: "true"
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/schema_evolution
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - schema_evolution_net
+
+  billing:
+    build:
+      context: ../services/billing
+    ports:
+      - "8003:8000"
+    environment:
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/schema_evolution
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - schema_evolution_net
+
+  analytics:
+    build:
+      context: ../services/analytics
+    ports:
+      - "8004:8000"
+    environment:
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/schema_evolution
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - schema_evolution_net
+
+  backfill:
+    build:
+      context: ../services/backfill
+    command: python worker.py
+    environment:
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/schema_evolution
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - schema_evolution_net
+
+volumes:
+  postgres_data:
