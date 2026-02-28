@@ -111,7 +111,7 @@ class TestEventSchemaValidation:
         jsonschema.validate(instance=sample_event_v2, schema=schema)
 
     def test_v1_event_fails_v2_schema_validation(self, sample_event_v1):
-        """A raw v1 event is NOT valid against v2 schema (missing given_name)."""
+        """A v1 event fails v2 schema validation due to event_version mismatch (1.0 vs 2.0 const)."""
         schema = _load_schema(V2_SCHEMA_PATH)
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(instance=sample_event_v1, schema=schema)
@@ -120,7 +120,7 @@ class TestEventSchemaValidation:
         """Removing a required field must fail validation."""
         schema = _load_schema(V2_SCHEMA_PATH)
         bad_event = {**sample_event_v2}
-        bad_event["data"] = {k: v for k, v in bad_event["data"].items() if k != "given_name"}
+        bad_event["data"] = {k: v for k, v in bad_event["data"].items() if k != "email"}
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(instance=bad_event, schema=schema)
 
