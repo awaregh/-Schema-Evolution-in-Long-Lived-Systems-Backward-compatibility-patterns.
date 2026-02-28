@@ -33,7 +33,7 @@
     "data": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["subscription_id", "user_id", "plan", "amount", "amount_cents", "currency", "billing_period"],
+      "required": ["subscription_id", "user_id", "plan", "amount", "currency", "billing_period"],
       "properties": {
         "subscription_id": {
           "type": "string",

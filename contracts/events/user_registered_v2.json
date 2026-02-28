@@ -34,7 +34,7 @@
     "data": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["user_id", "email", "given_name", "family_name"],
+      "required": ["user_id", "email"],
       "properties": {
         "user_id": {
           "type": "string",
