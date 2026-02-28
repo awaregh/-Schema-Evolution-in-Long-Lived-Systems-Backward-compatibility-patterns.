@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
@@ -54,7 +55,7 @@ class Subscription(Base):
     amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # v2 shadow column – written when schema_version >= 2 (type-change demo)
-    amount: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
 
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
     billing_cycle: Mapped[str] = mapped_column(
@@ -124,7 +125,7 @@ class Invoice(Base):
     amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # v2 shadow column
-    amount: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
 
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
