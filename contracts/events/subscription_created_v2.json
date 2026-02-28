@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SubscriptionCreatedV2",
+  "description": "Event emitted when a subscription is successfully created. Schema version 2.0.\n\nMigration notes from v1:\n- `data.amount` (decimal string) is added as the canonical representation.\n- `data.amount_cents` is retained as a deprecated alias for backward compatibility.\n  Both fields carry the same value; consumers should migrate to `amount`.\n- `data.amount_cents` will be removed in v3.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_type", "event_version", "timestamp", "data"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance."
+    },
+    "event_type": {
+      "type": "string",
+      "const": "subscription.created",
+      "description": "Fully-qualified event type name."
+    },
+    "event_version": {
+      "type": "string",
+      "const": "2.0",
+      "description": "Schema version of this event."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of when the event occurred."
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subscription_id", "user_id", "plan", "amount", "amount_cents", "currency", "billing_period"],
+      "properties": {
+        "subscription_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key of the subscription."
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owner of the subscription."
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["starter", "pro", "enterprise"],
+          "description": "Plan tier."
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d{2}$",
+          "description": "Billing amount as a decimal string (e.g. '9.99'). Canonical field in v2.",
+          "example": "9.99"
+        },
+        "amount_cents": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Deprecated alias for amount expressed as integer cents. Retained for v1 consumer compatibility. Will be removed in v3.",
+          "x-deprecated": true,
+          "x-deprecated-since": "2.0",
+          "x-replaced-by": "amount"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code.",
+          "example": "USD"
+        },
+        "billing_period": {
+          "type": "string",
+          "enum": ["monthly", "annual"],
+          "description": "How often the subscription renews."
+        },
+        "trial_ends_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional trial end date."
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the subscription became active."
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Arbitrary key/value pairs for extensibility.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserRegisteredV2",
+  "description": "Event emitted when a new user successfully registers. Schema version 2.0.\n\nMigration notes from v1:\n- `data.given_name` replaces `data.first_name` (canonical field).\n- `data.family_name` replaces `data.last_name` (canonical field).\n- `data.first_name` and `data.last_name` are kept as optional aliases so that\n  v1 consumers (tolerant readers) continue to work without changes.\n- `data.locale` and `data.display_name` are new optional fields.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_type", "event_version", "timestamp", "data"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance."
+    },
+    "event_type": {
+      "type": "string",
+      "const": "user.registered",
+      "description": "Fully-qualified event type name."
+    },
+    "event_version": {
+      "type": "string",
+      "const": "2.0",
+      "description": "Schema version of this event."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of when the event occurred."
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Optional trace/correlation identifier propagated from the originating request."
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["user_id", "email", "given_name", "family_name"],
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key of the newly registered user."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified email address of the user."
+        },
+        "given_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Given (first) name of the user. Canonical field in v2."
+        },
+        "family_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Family (last) name of the user. Canonical field in v2."
+        },
+        "first_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Deprecated alias for given_name. Populated with the same value for backward compatibility with v1 consumers. Will be removed in v3.",
+          "x-deprecated": true,
+          "x-deprecated-since": "2.0",
+          "x-replaced-by": "given_name"
+        },
+        "last_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Deprecated alias for family_name. Populated with the same value for backward compatibility with v1 consumers. Will be removed in v3.",
+          "x-deprecated": true,
+          "x-deprecated-since": "2.0",
+          "x-replaced-by": "family_name"
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["free", "starter", "pro", "enterprise"],
+          "description": "Subscription plan assigned at registration.",
+          "default": "free"
+        },
+        "display_name": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Optional display name. Defaults to given_name + family_name when absent."
+        },
+        "locale": {
+          "type": "string",
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+          "description": "BCP-47 locale tag (e.g. en-US)."
+        }
+      }
+    }
+  }
+}
