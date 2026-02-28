@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SubscriptionCreatedV1",
+  "description": "Event emitted when a subscription is successfully created. Schema version 1.0.\nAmounts are expressed in the smallest currency unit (cents).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_type", "event_version", "timestamp", "data"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance."
+    },
+    "event_type": {
+      "type": "string",
+      "const": "subscription.created",
+      "description": "Fully-qualified event type name."
+    },
+    "event_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version of this event."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of when the event occurred."
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subscription_id", "user_id", "plan", "amount_cents", "currency", "billing_period"],
+      "properties": {
+        "subscription_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key of the subscription."
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Owner of the subscription."
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["starter", "pro", "enterprise"],
+          "description": "Plan tier."
+        },
+        "amount_cents": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Billing amount in the smallest currency unit (e.g. cents for USD)."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code.",
+          "example": "USD"
+        },
+        "billing_period": {
+          "type": "string",
+          "enum": ["monthly", "annual"],
+          "description": "How often the subscription renews."
+        },
+        "trial_ends_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional trial end date. Null if no trial."
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the subscription became active."
+        }
+      }
+    }
+  }
+}

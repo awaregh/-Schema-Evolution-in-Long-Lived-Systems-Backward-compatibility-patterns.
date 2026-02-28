@@ -1,0 +1,390 @@
+openapi: "3.0.3"
+info:
+  title: Users API
+  version: "2.0.0"
+  description: >
+    User management API – version 2.
+
+    ## Breaking changes from v1
+    None – v2 is fully backward-compatible with v1 consumers.
+
+    ## Schema evolution
+    `first_name` / `last_name` are now **deprecated** aliases for
+    `given_name` / `family_name`.  Both names are accepted on write and
+    returned on read during the transition window.  The aliases will be
+    removed in v3 after the deprecation period ends.
+
+servers:
+  - url: /api/v1
+    description: Legacy v1 base path (still supported)
+  - url: /api/v2
+    description: Version 2 base path
+
+paths:
+  /users:
+    get:
+      operationId: listUsersV2
+      summary: List all users
+      tags: [users]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, pending]
+        - name: plan
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListV2"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+    post:
+      operationId: createUserV2
+      summary: Create a new user
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequestV2"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV2"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getUserV2
+      summary: Get a user by ID
+      tags: [users]
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV2"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      operationId: updateUserV2
+      summary: Update a user
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequestV2"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV2"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      operationId: deleteUserV2
+      summary: Delete a user
+      tags: [users]
+      responses:
+        "204":
+          description: User deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  schemas:
+    UserV2:
+      type: object
+      required:
+        - id
+        - given_name
+        - family_name
+        - email
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+
+        # ── v2 canonical name fields ──────────────────────────────────────
+        given_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Jane
+          description: Given (first) name of the user. Canonical field in v2.
+
+        family_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Doe
+          description: Family (last) name of the user. Canonical field in v2.
+
+        # ── v1 compatibility aliases (deprecated) ─────────────────────────
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Jane
+          description: >
+            Deprecated alias for `given_name`.
+            Populated with the same value as `given_name` for backward
+            compatibility. Will be removed in v3.
+          x-deprecated: true
+          x-deprecated-since: "2.0.0"
+          x-replaced-by: given_name
+
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Doe
+          description: >
+            Deprecated alias for `family_name`.
+            Populated with the same value as `family_name` for backward
+            compatibility. Will be removed in v3.
+          x-deprecated: true
+          x-deprecated-since: "2.0.0"
+          x-replaced-by: family_name
+
+        # ── unchanged fields ──────────────────────────────────────────────
+        email:
+          type: string
+          format: email
+          example: jane.doe@example.com
+
+        phone:
+          type: string
+          pattern: '^\+?[1-9]\d{1,14}$'
+          example: "+14155552671"
+          nullable: true
+
+        status:
+          type: string
+          enum: [active, inactive, pending, suspended]
+          example: active
+
+        plan:
+          type: string
+          enum: [free, starter, pro, enterprise]
+          example: free
+          nullable: true
+
+        display_name:
+          type: string
+          maxLength: 200
+          example: Jane Doe
+          description: >
+            Optional display name override. Defaults to
+            `given_name + " " + family_name` when not set.
+          nullable: true
+
+        locale:
+          type: string
+          pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+          example: en-US
+          nullable: true
+          description: BCP-47 locale tag for the user.
+
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    CreateUserRequestV2:
+      type: object
+      required:
+        - email
+      description: >
+        Provide either `given_name` / `family_name` (preferred) or
+        `first_name` / `last_name` (deprecated aliases, accepted for
+        backward compatibility). If both are supplied the canonical
+        fields take precedence.
+      properties:
+        given_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        family_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          x-deprecated: true
+          x-replaced-by: given_name
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          x-deprecated: true
+          x-replaced-by: family_name
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        plan:
+          type: string
+          enum: [free, starter, pro, enterprise]
+          default: free
+        display_name:
+          type: string
+          nullable: true
+        locale:
+          type: string
+          nullable: true
+
+    UpdateUserRequestV2:
+      type: object
+      properties:
+        given_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        family_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        first_name:
+          type: string
+          x-deprecated: true
+          x-replaced-by: given_name
+        last_name:
+          type: string
+          x-deprecated: true
+          x-replaced-by: family_name
+        phone:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        plan:
+          type: string
+          enum: [free, starter, pro, enterprise]
+        display_name:
+          type: string
+          nullable: true
+        locale:
+          type: string
+          nullable: true
+
+    UserListV2:
+      type: object
+      required:
+        - items
+        - total
+        - limit
+        - offset
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserV2"
+        total:
+          type: integer
+          example: 42
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Request validation failed
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

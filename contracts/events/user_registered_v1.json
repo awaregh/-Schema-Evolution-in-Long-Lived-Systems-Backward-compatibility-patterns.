@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserRegisteredV1",
+  "description": "Event emitted when a new user successfully registers. Schema version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_type", "event_version", "timestamp", "data"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance."
+    },
+    "event_type": {
+      "type": "string",
+      "const": "user.registered",
+      "description": "Fully-qualified event type name."
+    },
+    "event_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version of this event."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of when the event occurred."
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Optional trace/correlation identifier propagated from the originating request."
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["user_id", "email", "first_name", "last_name"],
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key of the newly registered user."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified email address of the user."
+        },
+        "first_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Given name of the user."
+        },
+        "last_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Family name of the user."
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["free", "starter", "pro", "enterprise"],
+          "description": "Subscription plan assigned at registration.",
+          "default": "free"
+        }
+      }
+    }
+  }
+}
